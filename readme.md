@@ -1,67 +1,150 @@
-# Foro Hub - Proyecto de Alura Challenges
+# Foro Hub — API REST
 
-Foro Hub es una aplicación de gestión de foros desarrollada en **Java con Spring Boot**, utilizando **Spring Security** para autenticación con JWT y conectada a **MySQL** como base de datos. Permite registrar usuarios, cursos, tópicos y respuestas de manera segura, con funcionalidades de CRUD y paginación.
-
----
-
-## Tecnologías utilizadas
-
-- Java 17
-- Spring Boot
-    - Spring Security (JWT)
-    - Spring Data JPA
-    - Spring Web
-- MySQL
-- Maven
-- Lombok
-- BCrypt para encriptación de contraseñas
-- Auth0 Java JWT
-- Insomnia para pruebas de request de la API
+Backend de un foro de discusión desarrollado como challenge final del programa **Oracle Next Education (ONE)** de Alura Latam. Permite a usuarios autenticados crear, consultar, actualizar y eliminar tópicos de discusión.
 
 ---
 
-## Funcionalidades
+## Tecnologías
 
-- **Usuarios**: Registro y autenticación con JWT.
-- **Cursos**: Consulta y gestión de cursos disponibles.
-- **Tópicos**: Crear, listar, actualizar, eliminar y ver detalles de tópicos.
-- **Respuestas**: Agregar comentarios a los tópicos.
-- **Seguridad**: Solo usuarios autenticados pueden acceder a las rutas protegidas.
-- **Validaciones**: Evita duplicados de título y mensaje en tópicos.
+- **Java 17**
+- **Spring Boot 3.5.4**
+- **Spring Security + JWT** (Auth0 java-jwt 4.5.0)
+- **Spring Data JPA + MySQL**
+- **Flyway** — migraciones de base de datos
+- **Lombok**
+- **SpringDoc OpenAPI** — documentación Swagger UI
 
 ---
 
-## Endpoints principales
+## Requisitos previos
+
+- Java 17+
+- MySQL 8+
+- Maven 3.8+
+
+---
+
+## Configuración
+
+El proyecto usa variables de entorno para no exponer credenciales. Antes de correrlo, definí las siguientes:
+
+| Variable | Descripción |
+|---|---|
+| `DB_URL` | URL de la base de datos, ej: `jdbc:mysql://localhost:3306/foro_hub` |
+| `DB_USER` | Usuario de MySQL |
+| `DB_PASSWORD` | Contraseña de MySQL |
+| `JWT_SECRET` | Clave secreta para firmar los tokens JWT |
+
+Podés definirlas en tu sistema operativo, en un archivo `.env` (con una librería compatible), o directamente en tu IDE como variables de entorno de ejecución.
+
+---
+
+## Cómo correr el proyecto
+
+```bash
+# 1. Clonar el repositorio
+git clone https://github.com/GreatBahamut/Alura-challenge-foro-hub.git
+cd Alura-challenge-foro-hub
+
+# 2. Configurar las variables de entorno (ver sección anterior)
+
+# 3. Compilar y ejecutar
+./mvnw spring-boot:run
+```
+
+Flyway ejecutará automáticamente las migraciones y dejará la base de datos lista.
+
+---
+
+## Documentación
+
+Con el proyecto corriendo, la documentación interactiva de la API está disponible en:
+
+```
+http://localhost:8080/swagger-ui.html
+```
+
+---
+
+## Endpoints
+
+### Autenticación
+
+| Método | Ruta | Descripción | Auth requerida |
+|---|---|---|---|
+| `POST` | `/login` | Obtener token JWT | No |
+
+**Body de ejemplo:**
+```json
+{
+  "login": "usuario@mail.com",
+  "contrasena": "tu_contraseña"
+}
+```
+
+**Respuesta:**
+```json
+{
+  "jwToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
+
+---
+
+### Tópicos
+
+Todos los endpoints de tópicos requieren el token JWT en el header:
+```
+Authorization: Bearer <token>
+```
 
 | Método | Ruta | Descripción |
-|--------|------|------------|
-| POST | `/login` | Iniciar sesión y recibir token JWT |
-| GET  | `/topicos` | Listar tópicos paginados |
-| GET  | `/topicos/{id}` | Ver detalles de un tópico |
-| POST | `/topicos` | Crear un nuevo tópico |
-| PUT  | `/topicos/{id}` | Actualizar un tópico existente |
-| DELETE | `/topicos/{id}` | Borrar un tópico |
+|---|---|---|
+| `GET` | `/topicos` | Listar todos los tópicos (paginado) |
+| `GET` | `/topicos/{id}` | Obtener un tópico por ID |
+| `POST` | `/topicos` | Crear un nuevo tópico |
+| `PUT` | `/topicos/{id}` | Actualizar un tópico |
+| `DELETE` | `/topicos/{id}` | Eliminar un tópico |
 
-> **Nota**: Todas las rutas, excepto `/login`, requieren token JWT en el encabezado `Authorization: Bearer <token>`. Enviar a la ruta `/login` este json `{"login" : "pipi@mail.com", "contrasena" : "123"}`
-
----
-
-## Base de datos
-
-Se utiliza MySQL con tablas principales:
-
-- `usuarios`
-- `cursos`
-- `topicos`
-- `respuestas`
-- `perfiles` y `usuario_perfil` (para roles)
-
-> Se incluyen datos de prueba para usuarios, cursos y tópicos.
+**Body para crear/actualizar:**
+```json
+{
+  "titulo": "¿Cómo usar Spring Security?",
+  "mensaje": "Tengo dudas sobre la configuración de JWT...",
+  "autor": "usuario@mail.com",
+  "curso": "Spring Boot"
+}
+```
 
 ---
 
-## Cómo ejecutar el proyecto
+## Reglas de negocio
 
-1. Clonar el repositorio:
-   ```bash
-   git clone <URL_DEL_REPOSITORIO>
+- No se permiten tópicos con título y mensaje duplicados.
+- Todos los campos son obligatorios al crear un tópico.
+- La autenticación es requerida para cualquier operación sobre tópicos.
+- Las contraseñas se almacenan hasheadas con BCrypt.
+
+---
+
+## Estructura del proyecto
+
+```
+src/
+└── main/
+    ├── java/com/alurachallenges/foro_hub/
+    │   ├── controllers/
+    │   ├── domain/
+    │   ├── infra/
+    │   │   └── security/
+    │   └── ForoHubApplication.java
+    └── resources/
+        ├── db/migration/       # Scripts Flyway
+        └── application.properties
+```
+
+---
+
+## Autor
+
+Desarrollado por [GreatBahamut](https://github.com/GreatBahamut) como parte del programa Oracle Next Education — Alura Latam.
